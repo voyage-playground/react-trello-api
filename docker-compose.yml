@@ -1,0 +1,44 @@
+version: '3.7'
+services:
+  api:
+    build:
+      context: ./
+    environment:
+      APP_ENV: local
+      DB_HOST: mongo
+    ports:
+      - 8080:8080
+    volumes:
+      - ./:/app
+    networks:
+      - react-trello-api
+
+  mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: secret
+    ports:
+      - 27017:27017
+    # volumes:
+    #   - reactTrelloData:/data/db
+    networks:
+      - react-trello-api
+
+  mongoku:
+    image: huggingface/mongoku
+    depends_on:
+      - mongo
+    environment:
+      MONGOKU_DEFAULT_HOST: mongodb://root:secret@mongo:27017
+    ports:
+      - 3100:3100
+    networks:
+      - react-trello-api
+
+# volumes:
+#   reactTrelloData:
+
+networks:
+  react-trello-api:
+    driver: bridge
