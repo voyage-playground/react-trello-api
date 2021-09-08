@@ -43,22 +43,40 @@ app.get('/board', async (req, res) => {
 app.post('/board', async (req, res) => {
   const db = await getDB();
   const collection = db.collection('boards');
-  await collection.updateOne(
-    { _id: 1 },
-    { $set: { lanes: req.body.lanes } },
-    { upsert: true }
-  );
+  const updated = { lanes: req.body.lanes };
+
+  const beforeDoc = await collection.findOne({ _id: 1 });
+
+  await collection.updateOne({ _id: 1 }, { $set: updated }, { upsert: true });
   const timestamp = Math.floor(new Date().getTime() / 1000);
 
-  const updatedPayload = JSON.stringify({ lanes: req.body.lanes });
+  const afterDoc = await collection.findOne({ _id: 1 });
+
+  const grabCards = (lanes) =>
+    lanes.reduce((acc, lane) => {
+      return [...acc, ...lane.cards];
+    }, []);
+
+  const beforeCards = grabCards(beforeDoc.lanes);
+  const afterCards = grabCards(afterDoc.lanes);
+
+  const updatedPayload = JSON.stringify(afterCards);
 
   // store board changes as an activity log in redis
   await setKey(timestamp, updatedPayload);
 
-  // push to gcp pub/sub to be consumed by other services in GCP
-  const dataBuffer = Buffer.from(updatedPayload);
-  const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
-  console.log(`Message ${messageId} published.`);
+  // new card was added
+  if (afterCards.length > beforeCards.length) {
+    const beforeIds = beforeCards.map((c) => c.id);
+    const afterIds = afterCards.map((c) => c.id);
+    const [addedCard] = afterIds.filter((x) => !beforeIds.includes(x));
+    const getAddedCard = afterCards.find((c) => c.id === addedCard);
+
+    // push to gcp pub/sub to be consumed by other services in GCP
+    const dataBuffer = Buffer.from(getAddedCard);
+    const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
+    console.log(`Message ${messageId} published.`);
+  }
 
   res.sendStatus(200);
 });
