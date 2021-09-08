@@ -18,10 +18,11 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: trello_clone
+    volumes:
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     ports:
       - 27017:27017
-    # volumes:
-    #   - reactTrelloData:/data/db
     networks:
       - react-trello-api
 
@@ -35,9 +36,6 @@ services:
       - 3100:3100
     networks:
       - react-trello-api
-
-# volumes:
-#   reactTrelloData:
 
 networks:
   react-trello-api:

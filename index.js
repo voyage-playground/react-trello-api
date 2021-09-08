@@ -6,7 +6,7 @@ const app = express();
 const port = 8080;
 
 const url = `mongodb://root:secret@${process.env.DB_HOST}:27017`;
-const dbName = 'admin';
+const dbName = 'trello_clone';
 const client = new MongoClient(url);
 
 const getDB = async () => {
@@ -33,7 +33,11 @@ app.get('/board', async (req, res) => {
 app.post('/board', async (req, res) => {
   const db = await getDB();
   const collection = db.collection('boards');
-  await collection.updateOne({ _id: 1 }, { $set: req.body }, { upsert: true });
+  await collection.updateOne(
+    { _id: 1 },
+    { $set: { lanes: req.body.lanes } },
+    { upsert: true }
+  );
   res.sendStatus(200);
 });
 
