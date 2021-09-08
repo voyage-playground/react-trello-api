@@ -73,7 +73,7 @@ app.post('/board', async (req, res) => {
     const getAddedCard = afterCards.find((c) => c.id === addedCard);
 
     // push to gcp pub/sub to be consumed by other services in GCP
-    const dataBuffer = Buffer.from(getAddedCard);
+    const dataBuffer = Buffer.from(JSON.stringify(getAddedCard));
     const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
     console.log(`Message ${messageId} published.`);
   }
