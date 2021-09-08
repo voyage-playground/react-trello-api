@@ -12,5 +12,5 @@ dockerize -wait $DB_HOSTNAME -timeout 60s
 if [ "$APP_ENV" == "local" ]; then
   npm start
 else
-  node server.js
+  node index.js
 fi
