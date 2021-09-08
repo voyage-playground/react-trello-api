@@ -15,4 +15,6 @@ COPY . .
 
 EXPOSE 8080
 
+ENV GOOGLE_APPLICATION_CREDENTIALS=/gcp.json
+
 ENTRYPOINT ["sh", "scripts/build_run_app.sh"]

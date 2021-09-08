@@ -1,20 +1,23 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { PubSub } = require('@google-cloud/pubsub');
 const { MongoClient } = require('mongodb');
 const redis = require('redis');
 const { promisify } = require('util');
 
 const app = express();
 const port = 8080;
+const url = `mongodb://root:secret@${process.env.DB_HOST}:27017`;
+const dbName = 'trello_clone';
+const topicName = 'react-trello-new-tickets';
+
+const client = new MongoClient(url);
+const pubSubClient = new PubSub();
 const redisClient = redis.createClient({
   url: `redis://${process.env.REDIS_HOST}:6379`,
 });
 const setKey = promisify(redisClient.set).bind(redisClient);
-
-const url = `mongodb://root:secret@${process.env.DB_HOST}:27017`;
-const dbName = 'trello_clone';
-const client = new MongoClient(url);
 
 const getDB = async () => {
   await client.connect();
@@ -47,7 +50,16 @@ app.post('/board', async (req, res) => {
   );
   const timestamp = Math.floor(new Date().getTime() / 1000);
 
-  await setKey(timestamp, JSON.stringify({ lanes: req.body.lanes }));
+  const updatedPayload = JSON.stringify({ lanes: req.body.lanes });
+
+  // store board changes as an activity log in redis
+  await setKey(timestamp, updatedPayload);
+
+  // push to gcp pub/sub to be consumed by other services in GCP
+  const dataBuffer = Buffer.from(updatedPayload);
+  const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
+  console.log(`Message ${messageId} published.`);
+
   res.sendStatus(200);
 });
 

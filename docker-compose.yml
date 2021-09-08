@@ -7,6 +7,7 @@ services:
       APP_ENV: local
       DB_HOST: mongo
       REDIS_HOST: redis
+      GCP_AUTH_CREDS: ${GCP_AUTH_CREDS}
     ports:
       - 8080:8080
     volumes:

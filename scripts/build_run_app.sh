@@ -9,6 +9,8 @@ DB_HOSTNAME=$([ -n "$DB_HOST" ] && echo "tcp://$DB_HOST:27017" || echo "tcp://12
 echo "🚀 Wait for DB to start"
 dockerize -wait $DB_HOSTNAME -timeout 60s
 
+echo $GCP_AUTH_CREDS >/gcp.json
+
 if [ "$APP_ENV" == "local" ]; then
   npm start
 else
