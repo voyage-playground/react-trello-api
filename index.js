@@ -2,8 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
+const redis = require('redis');
+const { promisify } = require('util');
+
 const app = express();
 const port = 8080;
+const redisClient = redis.createClient({
+  url: `redis://${process.env.REDIS_HOST}:6379`,
+});
+const setKey = promisify(redisClient.set).bind(redisClient);
 
 const url = `mongodb://root:secret@${process.env.DB_HOST}:27017`;
 const dbName = 'trello_clone';
@@ -38,6 +45,9 @@ app.post('/board', async (req, res) => {
     { $set: { lanes: req.body.lanes } },
     { upsert: true }
   );
+  const timestamp = Math.floor(new Date().getTime() / 1000);
+
+  await setKey(timestamp, JSON.stringify({ lanes: req.body.lanes }));
   res.sendStatus(200);
 });
 
